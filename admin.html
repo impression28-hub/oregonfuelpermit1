@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin | Oregon Fuel Permit</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div id="login-view" class="admin-login">
+  <h1 style="font-size:1.5rem;">Admin login</h1>
+  <div class="card">
+    <form id="login-form" novalidate>
+      <div class="field" id="field-login-email">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" required />
+      </div>
+      <div class="field" id="field-login-password">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" required />
+      </div>
+      <div class="error-msg" id="login-error" style="display:none;">Invalid email or password.</div>
+      <button type="submit" class="primary">Log in</button>
+    </form>
+  </div>
+</div>
+
+<div id="admin-view" style="display:none;">
+  <div class="admin-topbar">
+    <div class="brand">Oregon <span>Fuel Permit</span> — Admin</div>
+    <button type="button" class="ghost" id="logout-btn" style="width:auto; margin:0;">Log out</button>
+  </div>
+
+  <div class="admin-page">
+    <h1 style="font-size:1.4rem;">Requests &amp; purchases</h1>
+    <p class="subhead" style="margin-bottom:20px;">Every application that's reached checkout — paid or still pending.</p>
+
+    <div class="admin-filters">
+      <button type="button" class="filter-btn active" data-filter="all">All</button>
+      <button type="button" class="filter-btn" data-filter="paid">Paid</button>
+      <button type="button" class="filter-btn" data-filter="pending">Pending</button>
+    </div>
+
+    <div class="admin-table-wrap">
+      <table class="admin-table" id="submissions-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Company</th>
+            <th>USDOT</th>
+            <th>Contact</th>
+            <th>Details</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="submissions-body"></tbody>
+      </table>
+      <div class="admin-empty" id="empty-msg" style="display:none;">No submissions yet.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // --- Fill these in with your own Supabase project values ---
+  // The anon key is safe to expose here — the submissions table's Row
+  // Level Security policy only allows reads from a logged-in admin,
+  // so this key alone can't read anyone's data.
+  const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_GJqCtFWC9LHTuXFVkZwGwA_mY4PaVy1";
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const loginView = document.getElementById("login-view");
+  const adminView = document.getElementById("admin-view");
+  const loginForm = document.getElementById("login-form");
+  const loginError = document.getElementById("login-error");
+
+  let allSubmissions = [];
+  let activeFilter = "all";
+
+  async function checkSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      showAdmin();
+    } else {
+      showLogin();
+    }
+  }
+
+  function showLogin() {
+    loginView.style.display = "block";
+    adminView.style.display = "none";
+  }
+
+  async function showAdmin() {
+    loginView.style.display = "none";
+    adminView.style.display = "block";
+    await loadSubmissions();
+  }
+
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    loginError.style.display = "none";
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value;
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      loginError.style.display = "block";
+      return;
+    }
+    showAdmin();
+  });
+
+  document.getElementById("logout-btn").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    showLogin();
+  });
+
+  async function loadSubmissions() {
+    const { data, error } = await supabase
+      .from("submissions")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      document.getElementById("empty-msg").textContent = `Couldn't load submissions: ${error.message}`;
+      document.getElementById("empty-msg").style.display = "block";
+      return;
+    }
+
+    allSubmissions = data || [];
+    renderTable();
+  }
+
+  function detailsFor(row) {
+    if (row.order_type === "extended-weight") {
+      return `${row.permit_type || ""}`;
+    }
+    const dir = row.direction === "entering" ? "Entering" : "Exiting";
+    const trip = row.trip_type === "round-trip" ? "round trip" : "one way";
+    const miles = row.miles ? `${Number(row.miles).toFixed(1)} mi` : "";
+    return `${dir}, ${trip} — ${miles}`;
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById("submissions-body");
+    const emptyMsg = document.getElementById("empty-msg");
+
+    const rows = allSubmissions.filter((r) => activeFilter === "all" || r.status === activeFilter);
+
+    if (rows.length === 0) {
+      tbody.innerHTML = "";
+      emptyMsg.textContent = "No submissions yet.";
+      emptyMsg.style.display = "block";
+      return;
+    }
+
+    emptyMsg.style.display = "none";
+    tbody.innerHTML = rows
+      .map((row) => {
+        const date = new Date(row.created_at).toLocaleString();
+        const type = row.order_type === "extended-weight" ? "Extended Weight" : "Trip Permit";
+        const statusClass = row.status === "paid" ? "paid" : "pending";
+        return `
+          <tr>
+            <td>${date}</td>
+            <td>${type}</td>
+            <td><span class="status-pill ${statusClass}">${row.status}</span></td>
+            <td>${row.company || ""}</td>
+            <td>${row.usdot || ""}</td>
+            <td>${row.email || ""}<br>${row.phone || ""}</td>
+            <td>${detailsFor(row)}</td>
+            <td>$${Number(row.price).toFixed(2)}</td>
+          </tr>
+        `;
+      })
+      .join("");
+  }
+
+  document.querySelectorAll(".filter-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeFilter = btn.dataset.filter;
+      renderTable();
+    });
+  });
+
+  checkSession();
+</script>
+
+</body>
+</html>

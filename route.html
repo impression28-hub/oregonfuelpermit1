@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Build Your Route | Oregon Fuel Permit</title>
+<meta name="description" content="Build your Oregon route and get an instant mileage-based permit price." />
+<meta name="robots" content="noindex, follow" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Oregon <span>Fuel Permit</span></div>
+  <div class="steps">
+    <span class="step done">1 · Company</span>
+    <span class="step done">2 · Vehicle</span>
+    <span class="step done">3 · Direction</span>
+    <span class="step active">4 · Route</span>
+    <span class="step">5 · Pay</span>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Build your route</h1>
+  <p class="subhead" id="direction-label">Pick your route details below.</p>
+
+  <div class="field" id="field-trip-type">
+    <label>Trip type</label>
+    <div class="choice-row">
+      <button type="button" class="choice-btn" id="btn-one-way">One way</button>
+      <button type="button" class="choice-btn" id="btn-round-trip">Round trip</button>
+    </div>
+  </div>
+
+  <div class="card">
+
+    <!-- Shown when entering Oregon -->
+    <div class="field" id="field-entrance" style="display:none;">
+      <label for="entrance">Entrance point</label>
+      <select id="entrance"></select>
+      <div class="error-msg">Select an entrance point.</div>
+    </div>
+
+    <!-- Shown when exiting Oregon -->
+    <div class="field" id="field-start-city" style="display:none;">
+      <label for="start-city">Starting city or ZIP</label>
+      <input type="text" id="start-city" placeholder="City name or ZIP code" />
+      <div class="error-msg">Enter the city or ZIP you're starting from.</div>
+    </div>
+
+    <div class="field" id="field-stops">
+      <label>Stops</label>
+      <div id="stops-container"></div>
+      <button type="button" class="ghost" id="add-stop">+ Add a stop (city or ZIP)</button>
+    </div>
+
+    <div class="field" id="field-exit">
+      <label for="exit">Exit point (optional)</label>
+      <select id="exit"></select>
+      <div class="hint">Leave this blank if the trip ends inside Oregon without crossing the border.</div>
+    </div>
+
+    <div class="error-msg" id="route-incomplete-msg" style="display:none; margin-bottom:16px;">
+      Add an exit point or at least one stop to complete the route.
+    </div>
+
+    <button type="button" class="primary" id="calculate-btn">Calculate</button>
+
+    <div class="result-box" id="result-box">
+      <div class="miles" id="result-miles">—</div>
+      <div class="price" id="result-price"></div>
+      <button type="button" class="primary" id="pay-btn" style="margin-top:16px;">Pay</button>
+    </div>
+
+    <button type="button" class="ghost" onclick="goTo('direction.html')">Back</button>
+  </div>
+
+  <p class="notice">
+    The permit fee formula is still a placeholder — the mileage rate will be swapped in once you provide the real pricing.
+  </p>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="brand">Oregon <span>Fuel Permit</span></div>
+      <p>Apply online for Oregon single-trip and extended weight permits.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="index.html">Home</a>
+      <a href="extended-weight-permit.html">Extended Weight Permit</a>
+      <a href="faq.html">FAQ</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="terms-and-conditions.html">Terms &amp; Conditions</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="tel:15038626399">(503) 862-6399</a>
+      <a href="mailto:support@oregonfuelpermit.com">support@oregonfuelpermit.com</a>
+    </div>
+  </div>
+  <p class="footer-bottom">© 2026 Oregon Fuel Permit. All rights reserved.</p>
+</footer>
+
+<script src="app.js"></script>
+<script>
+  const existing = getPermitData();
+  if (!existing.usdot) goTo("index.html");
+  if (!existing.driver) goTo("vehicle.html");
+  if (!existing.direction) goTo("direction.html");
+
+  const isEntering = existing.direction === "entering";
+
+  document.getElementById("direction-label").textContent = isEntering
+    ? "Entering Oregon — pick your entrance point, any stops, and (optionally) where you'll exit."
+    : "Exiting Oregon — start from a city, add any stops, and (optionally) pick where you'll exit.";
+
+  document.getElementById("field-entrance").style.display = isEntering ? "block" : "none";
+  document.getElementById("field-start-city").style.display = isEntering ? "none" : "block";
+
+  populateGroupedSelect(document.getElementById("entrance"), ENTRANCE_POINTS, "Select entrance point");
+  populateGroupedSelect(document.getElementById("exit"), EXIT_POINTS, "Select exit point (optional)");
+
+  // ---- Trip type: one way (default) or round trip ----
+  let tripType = existing.tripType || "one-way";
+  const oneWayBtn = document.getElementById("btn-one-way");
+  const roundTripBtn = document.getElementById("btn-round-trip");
+
+  function renderTripType() {
+    oneWayBtn.style.borderColor = tripType === "one-way" ? "var(--forest)" : "var(--border)";
+    roundTripBtn.style.borderColor = tripType === "round-trip" ? "var(--forest)" : "var(--border)";
+  }
+  renderTripType();
+
+  oneWayBtn.addEventListener("click", () => {
+    tripType = "one-way";
+    savePermitData({ tripType });
+    renderTripType();
+  });
+  roundTripBtn.addEventListener("click", () => {
+    tripType = "round-trip";
+    savePermitData({ tripType });
+    renderTripType();
+  });
+
+  // ---- Stops (works the same for either direction) ----
+  const stopsContainer = document.getElementById("stops-container");
+
+  function addStopRow() {
+    const row = document.createElement("div");
+    row.className = "stop-row";
+    row.innerHTML = `
+      <input type="text" placeholder="City name or ZIP code" class="stop-input" />
+      <button type="button" class="remove-stop" aria-label="Remove stop">&times;</button>
+    `;
+    row.querySelector(".remove-stop").addEventListener("click", () => row.remove());
+    stopsContainer.appendChild(row);
+  }
+
+  document.getElementById("add-stop").addEventListener("click", addStopRow);
+
+  function setInvalid(fieldId, invalid) {
+    document.getElementById(fieldId).classList.toggle("invalid", invalid);
+  }
+
+  document.getElementById("calculate-btn").addEventListener("click", async () => {
+    const entrance = document.getElementById("entrance").value;
+    const startCity = document.getElementById("start-city").value.trim();
+    const exit = document.getElementById("exit").value;
+    const stops = Array.from(document.querySelectorAll(".stop-input"))
+      .map((i) => i.value.trim())
+      .filter(Boolean);
+
+    let valid = true;
+    document.getElementById("route-incomplete-msg").style.display = "none";
+
+    // Origin: entrance point when entering, typed city when exiting.
+    if (isEntering) {
+      setInvalid("field-entrance", !entrance);
+      valid = valid && !!entrance;
+    } else {
+      setInvalid("field-start-city", !startCity);
+      valid = valid && !!startCity;
+    }
+
+    // The route needs an ending: either an exit point or at least one stop.
+    const hasEnding = !!exit || stops.length > 0;
+    if (!hasEnding) {
+      document.getElementById("route-incomplete-msg").style.display = "block";
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    const origin = isEntering ? entrance : startCity;
+    const waypoints = [origin, ...stops];
+    if (exit) waypoints.push(exit);
+
+    const btn = document.getElementById("calculate-btn");
+    btn.disabled = true;
+    btn.textContent = "Calculating…";
+
+    try {
+      let miles = await calculateRouteMiles(waypoints);
+      if (tripType === "round-trip") miles = miles * 2;
+
+      const price = calculatePrice(miles, existing);
+
+      document.getElementById("result-miles").textContent = `${miles.toFixed(1)} mi`;
+      document.getElementById("result-price").textContent = `Permit fee: $${price.toFixed(2)}`;
+      document.getElementById("result-box").classList.add("show");
+
+      savePermitData({ entrance, startCity, exit, stops, tripType, miles, price });
+    } catch (err) {
+      alert(err.message || "Couldn't calculate that route. Check the points and try again.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Calculate";
+    }
+  });
+
+  document.getElementById("pay-btn").addEventListener("click", () => {
+    goTo("payment.html");
+  });
+</script>
+
+</body>
+</html>

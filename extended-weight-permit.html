@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Extended Weight Permit | Oregon Fuel Permit</title>
+<meta name="description" content="Apply for an Oregon extended weight permit online. Flat-fee, valid for one year — choose highways only or highways and county roads." />
+<meta name="robots" content="index, follow" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="brand" href="index.html">Oregon <span>Fuel Permit</span></a>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="extended-weight-permit.html">Extended Weight Permit</a>
+      <a href="faq.html">FAQ</a>
+      <a class="phone-link" href="tel:15038626399">(503) 862-6399</a>
+    </nav>
+  </div>
+</header>
+
+<main class="content-page">
+  <h1>Extended weight permit</h1>
+  <p class="subhead">
+    A flat-fee permit valid for one year — no mileage calculation needed.
+    Choose highways only, or highways and county roads.
+  </p>
+
+  <h2>What is an extended weight permit?</h2>
+  <p>
+    An extended weight permit allows a qualifying vehicle combination to operate
+    at gross weights above the standard limit for a full year, rather than for a
+    single trip. It's a flat annual fee based on which roads you need to travel —
+    highways only, or highways plus county roads.
+  </p>
+
+  <h2>Who typically needs one</h2>
+  <ul>
+    <li>Carriers running the same heavy configuration on a recurring basis</li>
+    <li>Fleets that need standing weight authority rather than a one-time trip permit</li>
+    <li>Vehicles that regularly use county roads in addition to state highways</li>
+  </ul>
+
+  <div class="card" style="margin-top:32px;">
+    <form id="ewp-form" novalidate>
+
+      <div class="field mono" id="field-usdot">
+        <label for="usdot">USDOT number</label>
+        <input type="text" id="usdot" inputmode="numeric" placeholder="e.g. 1234567" required />
+        <div class="error-msg">Enter a valid USDOT number.</div>
+      </div>
+
+      <div class="field" id="field-company">
+        <label for="company">Company name</label>
+        <input type="text" id="company" placeholder="Company name" required />
+        <div class="error-msg">Enter the company name.</div>
+      </div>
+
+      <div class="field mono" id="field-unit">
+        <label for="unit">Truck unit number</label>
+        <input type="text" id="unit" placeholder="e.g. 142" required />
+        <div class="error-msg">Enter the truck unit number.</div>
+      </div>
+
+      <div class="field mono" id="field-plate">
+        <label for="plate">License plate number</label>
+        <input type="text" id="plate" required />
+        <div class="error-msg">Enter the license plate number.</div>
+      </div>
+
+      <div class="field mono" id="field-vin">
+        <label for="vin">VIN number</label>
+        <input type="text" id="vin" maxlength="17" placeholder="17 characters" required />
+        <div class="error-msg">VIN must be exactly 17 characters.</div>
+      </div>
+
+      <div class="field" id="field-phone">
+        <label for="phone">Phone number</label>
+        <input type="tel" id="phone" placeholder="(555) 123-4567" required />
+        <div class="error-msg">Enter a valid phone number.</div>
+      </div>
+
+      <div class="field" id="field-email">
+        <label for="email">Email address</label>
+        <input type="email" id="email" placeholder="you@company.com" required />
+        <div class="error-msg">Enter a valid email address.</div>
+      </div>
+
+      <div class="row-2">
+        <button type="button" class="primary" id="pay-88">Pay $88 — Highways</button>
+        <button type="button" class="primary" id="pay-380">Pay $380 — Highways &amp; County Roads</button>
+      </div>
+      <p class="hint" style="text-align:center; margin-top:10px;">Valid for one year.</p>
+    </form>
+  </div>
+
+  <p class="notice">
+    This page provides general information and isn't a substitute for Oregon's
+    official permit rules. If you're unsure whether your configuration qualifies,
+    call us at (503) 862-6399 and we can help you figure out the right permit type.
+  </p>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="brand">Oregon <span>Fuel Permit</span></div>
+      <p>Apply online for Oregon single-trip and extended weight permits.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="index.html">Home</a>
+      <a href="extended-weight-permit.html">Extended Weight Permit</a>
+      <a href="faq.html">FAQ</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="terms-and-conditions.html">Terms &amp; Conditions</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="tel:15038626399">(503) 862-6399</a>
+      <a href="mailto:support@oregonfuelpermit.com">support@oregonfuelpermit.com</a>
+    </div>
+  </div>
+  <p class="footer-bottom">© 2026 Oregon Fuel Permit. All rights reserved.</p>
+</footer>
+
+<script src="app.js"></script>
+<script>
+  function setInvalid(fieldId, invalid) {
+    document.getElementById(fieldId).classList.toggle("invalid", invalid);
+  }
+
+  function val(id) {
+    return document.getElementById(id).value.trim();
+  }
+
+  function validateAndCollect() {
+    let valid = true;
+
+    const usdotOk = /^[0-9]{5,8}$/.test(val("usdot"));
+    setInvalid("field-usdot", !usdotOk);
+    valid = valid && usdotOk;
+
+    const companyOk = !!val("company");
+    setInvalid("field-company", !companyOk);
+    valid = valid && companyOk;
+
+    const unitOk = !!val("unit");
+    setInvalid("field-unit", !unitOk);
+    valid = valid && unitOk;
+
+    const plateOk = !!val("plate");
+    setInvalid("field-plate", !plateOk);
+    valid = valid && plateOk;
+
+    const vinOk = val("vin").length === 17;
+    setInvalid("field-vin", !vinOk);
+    valid = valid && vinOk;
+
+    const phoneOk = val("phone").length >= 10;
+    setInvalid("field-phone", !phoneOk);
+    valid = valid && phoneOk;
+
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val("email"));
+    setInvalid("field-email", !emailOk);
+    valid = valid && emailOk;
+
+    if (!valid) return null;
+
+    return {
+      orderType: "extended-weight",
+      usdot: val("usdot"),
+      company: val("company"),
+      unitNumber: val("unit"),
+      plate: val("plate"),
+      vin: val("vin"),
+      phone: val("phone"),
+      email: val("email"),
+    };
+  }
+
+  document.getElementById("pay-88").addEventListener("click", () => {
+    const data = validateAndCollect();
+    if (!data) return;
+    savePermitData({ ...data, permitType: "Highways", price: 88 });
+    goTo("payment.html");
+  });
+
+  document.getElementById("pay-380").addEventListener("click", () => {
+    const data = validateAndCollect();
+    if (!data) return;
+    savePermitData({ ...data, permitType: "Highways & County Roads", price: 380 });
+    goTo("payment.html");
+  });
+</script>
+
+</body>
+</html>

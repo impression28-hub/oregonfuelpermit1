@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Direction of Travel | Oregon Fuel Permit</title>
+<meta name="description" content="Choose whether you're entering or exiting Oregon for your trip permit." />
+<meta name="robots" content="noindex, follow" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Oregon <span>Fuel Permit</span></div>
+  <div class="steps">
+    <span class="step done">1 · Company</span>
+    <span class="step done">2 · Vehicle</span>
+    <span class="step active">3 · Direction</span>
+    <span class="step">4 · Route</span>
+    <span class="step">5 · Pay</span>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Which way are you traveling?</h1>
+  <p class="subhead">This decides which border points we'll show you on the next step.</p>
+
+  <div class="choice-row">
+    <button type="button" class="choice-btn" id="btn-entering">Entering Oregon</button>
+    <button type="button" class="choice-btn" id="btn-exiting">Exiting Oregon</button>
+  </div>
+
+  <button type="button" class="ghost" onclick="goTo('vehicle.html')" style="max-width:640px;">Back</button>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="brand">Oregon <span>Fuel Permit</span></div>
+      <p>Apply online for Oregon single-trip and extended weight permits.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="index.html">Home</a>
+      <a href="extended-weight-permit.html">Extended Weight Permit</a>
+      <a href="faq.html">FAQ</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="terms-and-conditions.html">Terms &amp; Conditions</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="tel:15038626399">(503) 862-6399</a>
+      <a href="mailto:support@oregonfuelpermit.com">support@oregonfuelpermit.com</a>
+    </div>
+  </div>
+  <p class="footer-bottom">© 2026 Oregon Fuel Permit. All rights reserved.</p>
+</footer>
+
+<script src="app.js"></script>
+<script>
+  const existing = getPermitData();
+  if (!existing.usdot) goTo("index.html");
+  if (!existing.driver) goTo("vehicle.html");
+
+  document.getElementById("btn-entering").addEventListener("click", () => {
+    savePermitData({ direction: "entering" });
+    goTo("route.html");
+  });
+
+  document.getElementById("btn-exiting").addEventListener("click", () => {
+    savePermitData({ direction: "exiting" });
+    goTo("route.html");
+  });
+</script>
+
+</body>
+</html>

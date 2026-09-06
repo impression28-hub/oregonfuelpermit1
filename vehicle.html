@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vehicle & Driver Details | Oregon Fuel Permit</title>
+<meta name="description" content="Add driver and vehicle details for your Oregon permit application." />
+<meta name="robots" content="noindex, follow" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Oregon <span>Fuel Permit</span></div>
+  <div class="steps">
+    <span class="step done">1 · Company</span>
+    <span class="step active">2 · Vehicle</span>
+    <span class="step">3 · Direction</span>
+    <span class="step">4 · Route</span>
+    <span class="step">5 · Pay</span>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Driver &amp; vehicle details</h1>
+  <p class="subhead">Tell us who's driving and what they're driving.</p>
+
+  <div class="card">
+    <form id="vehicle-form" novalidate>
+
+      <div class="field" id="field-driver">
+        <label for="driver">Driver's name</label>
+        <input type="text" id="driver" required />
+        <div class="error-msg">Enter the driver's name.</div>
+      </div>
+
+      <div class="row-2">
+        <div class="field" id="field-year">
+          <label for="year">Vehicle year</label>
+          <input type="number" id="year" min="1970" max="2027" placeholder="2022" required />
+          <div class="error-msg">Enter a valid vehicle year.</div>
+        </div>
+        <div class="field" id="field-make">
+          <label for="make">Vehicle make</label>
+          <input type="text" id="make" placeholder="Freightliner" required />
+          <div class="error-msg">Enter the vehicle make.</div>
+        </div>
+      </div>
+
+      <div class="field mono" id="field-vin">
+        <label for="vin">Complete VIN number</label>
+        <input type="text" id="vin" maxlength="17" placeholder="17 characters" required />
+        <div class="error-msg">VIN must be exactly 17 characters.</div>
+      </div>
+
+      <div class="row-2">
+        <div class="field mono" id="field-plate">
+          <label for="plate">License plate number</label>
+          <input type="text" id="plate" required />
+          <div class="error-msg">Enter the license plate number.</div>
+        </div>
+        <div class="field" id="field-plate-state">
+          <label for="plate-state">License plate issue state/province</label>
+          <select id="plate-state" required></select>
+          <div class="error-msg">Select the issuing state or province.</div>
+        </div>
+      </div>
+
+      <div class="field" id="field-plate-type">
+        <label for="plate-type">License plate type</label>
+        <select id="plate-type" required>
+          <option value="">Select plate type</option>
+          <option value="Apportioned">Apportioned</option>
+          <option value="Non-apportioned">Non-apportioned</option>
+        </select>
+        <div class="error-msg">Select the plate type.</div>
+      </div>
+
+      <div class="field" id="field-weight">
+        <label for="weight">Gross weight of the vehicle</label>
+        <select id="weight" required></select>
+        <div class="error-msg">Select the gross vehicle weight.</div>
+      </div>
+
+      <div class="field" id="field-axles" style="display:none;">
+        <label for="axles">Number of axles</label>
+        <select id="axles"></select>
+        <div class="error-msg">Select the number of axles.</div>
+      </div>
+
+      <div class="field" id="field-ownership">
+        <label for="ownership">Truck is</label>
+        <select id="ownership" required>
+          <option value="">Select ownership</option>
+          <option value="Owned">Owned</option>
+          <option value="Leased">Leased</option>
+        </select>
+        <div class="error-msg">Select owned or leased.</div>
+      </div>
+
+      <div class="field" id="field-leasing-company" style="display:none;">
+        <label for="leasing-company">Leasing company name</label>
+        <input type="text" id="leasing-company" placeholder="Name of the leasing company" />
+        <div class="error-msg">Enter the leasing company's name.</div>
+      </div>
+
+      <div class="field" id="field-commodity">
+        <label for="commodity">Commodity type</label>
+        <input type="text" id="commodity" placeholder="What is the vehicle hauling?" required />
+        <div class="error-msg">Enter the commodity being hauled.</div>
+      </div>
+
+      <button type="submit" class="primary">Next</button>
+      <button type="button" class="ghost" onclick="goTo('index.html')">Back</button>
+    </form>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="brand">Oregon <span>Fuel Permit</span></div>
+      <p>Apply online for Oregon single-trip and extended weight permits.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="index.html">Home</a>
+      <a href="extended-weight-permit.html">Extended Weight Permit</a>
+      <a href="faq.html">FAQ</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="terms-and-conditions.html">Terms &amp; Conditions</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="tel:15038626399">(503) 862-6399</a>
+      <a href="mailto:support@oregonfuelpermit.com">support@oregonfuelpermit.com</a>
+    </div>
+  </div>
+  <p class="footer-bottom">© 2026 Oregon Fuel Permit. All rights reserved.</p>
+</footer>
+
+<script src="app.js"></script>
+<script>
+  // Guard: don't allow skipping ahead without step 1 data.
+  const existing = getPermitData();
+  if (!existing.usdot) goTo("index.html");
+
+  populateGroupedSelect(document.getElementById("plate-state"), PLATE_STATE_GROUPS, "Select state/province");
+  populateSelect(document.getElementById("weight"), WEIGHT_BRACKETS, "Select weight bracket");
+  populateSelect(document.getElementById("axles"), AXLE_OPTIONS, "Select number of axles");
+
+  const weightSelect = document.getElementById("weight");
+  const axlesField = document.getElementById("field-axles");
+  const axlesSelect = document.getElementById("axles");
+
+  weightSelect.addEventListener("change", () => {
+    const bracket = getWeightBracket(weightSelect.value);
+    const needsAxles = !!(bracket && bracket.requiresAxles);
+    axlesField.style.display = needsAxles ? "block" : "none";
+    if (!needsAxles) axlesSelect.value = "";
+  });
+
+  const ownershipSelect = document.getElementById("ownership");
+  const leasingField = document.getElementById("field-leasing-company");
+  ownershipSelect.addEventListener("change", () => {
+    leasingField.style.display = ownershipSelect.value === "Leased" ? "block" : "none";
+  });
+
+  function setInvalid(fieldId, invalid) {
+    document.getElementById(fieldId).classList.toggle("invalid", invalid);
+  }
+
+  document.getElementById("vehicle-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    let valid = true;
+    const val = (id) => document.getElementById(id).value.trim();
+
+    const checks = [
+      ["field-driver", !!val("driver")],
+      ["field-year", /^[0-9]{4}$/.test(val("year"))],
+      ["field-make", !!val("make")],
+      ["field-vin", val("vin").length === 17],
+      ["field-plate", !!val("plate")],
+      ["field-plate-state", !!val("plate-state")],
+      ["field-plate-type", !!val("plate-type")],
+      ["field-weight", !!val("weight")],
+      ["field-ownership", !!val("ownership")],
+      ["field-commodity", !!val("commodity")],
+    ];
+
+    if (val("ownership") === "Leased") {
+      checks.push(["field-leasing-company", !!val("leasing-company")]);
+    }
+
+    const selectedBracket = getWeightBracket(val("weight"));
+    if (selectedBracket && selectedBracket.requiresAxles) {
+      checks.push(["field-axles", !!val("axles")]);
+    }
+
+    checks.forEach(([id, ok]) => {
+      setInvalid(id, !ok);
+      valid = valid && ok;
+    });
+
+    if (!valid) return;
+
+    savePermitData({
+      driver: val("driver"),
+      year: val("year"),
+      make: val("make"),
+      vin: val("vin"),
+      plate: val("plate"),
+      plateState: val("plate-state"),
+      plateType: val("plate-type"),
+      weight: val("weight"),
+      axles: selectedBracket && selectedBracket.requiresAxles ? val("axles") : "",
+      ownership: val("ownership"),
+      leasingCompany: val("ownership") === "Leased" ? val("leasing-company") : "",
+      commodity: val("commodity"),
+    });
+
+    goTo("direction.html");
+  });
+</script>
+
+</body>
+</html>

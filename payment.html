@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Payment | Oregon Fuel Permit</title>
+<meta name="description" content="Review your Oregon permit details and complete secure payment." />
+<meta name="robots" content="noindex, follow" />
+<link rel="stylesheet" href="style.css" />
+<script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Oregon <span>Fuel Permit</span></div>
+  <div class="steps">
+    <span class="step done">1 · Company</span>
+    <span class="step done">2 · Vehicle</span>
+    <span class="step done">3 · Direction</span>
+    <span class="step done">4 · Route</span>
+    <span class="step active">5 · Pay</span>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Review &amp; pay</h1>
+  <p class="subhead">Confirm the details below, then complete payment to submit your permit application.</p>
+
+  <div class="card" id="summary-card"></div>
+
+  <div class="card" style="margin-top:20px;">
+    <form id="payment-form">
+      <div class="field">
+        <label for="stripe-card-element">Card details</label>
+        <div id="stripe-card-element"></div>
+      </div>
+      <div class="lookup-status error" id="card-errors" role="alert"></div>
+      <button type="submit" class="primary" id="submit-btn">Pay</button>
+    </form>
+  </div>
+
+  <p class="notice">
+    This page loads Stripe.js and Stripe Elements for secure card entry. Creating the actual charge (the PaymentIntent) has to happen on a server with your Stripe secret key — set STRIPE_PUBLISHABLE_KEY and CREATE_INTENT_ENDPOINT below to your own values once that backend exists.
+  </p>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="brand">Oregon <span>Fuel Permit</span></div>
+      <p>Apply online for Oregon single-trip and extended weight permits.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="index.html">Home</a>
+      <a href="extended-weight-permit.html">Extended Weight Permit</a>
+      <a href="faq.html">FAQ</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="terms-and-conditions.html">Terms &amp; Conditions</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="tel:15038626399">(503) 862-6399</a>
+      <a href="mailto:support@oregonfuelpermit.com">support@oregonfuelpermit.com</a>
+    </div>
+  </div>
+  <p class="footer-bottom">© 2026 Oregon Fuel Permit. All rights reserved.</p>
+</footer>
+
+<script src="app.js"></script>
+<script>
+  const data = getPermitData();
+  if (!data.usdot) goTo("index.html");
+
+  const isExtendedWeight = data.orderType === "extended-weight";
+  if (!isExtendedWeight && !data.miles) goTo("route.html");
+
+  const summaryCard = document.getElementById("summary-card");
+  const rows = isExtendedWeight
+    ? [
+        ["Company", data.company],
+        ["USDOT", data.usdot],
+        ["Truck unit number", data.unitNumber],
+        ["License plate", data.plate],
+        ["VIN", data.vin],
+        ["Permit type", data.permitType],
+        ["Valid for", "1 year"],
+        ["Amount due", `$${Number(data.price).toFixed(2)}`],
+      ]
+    : [
+        ["Company", data.company],
+        ["USDOT", data.usdot],
+        ["Driver", data.driver],
+        ["Vehicle", `${data.year} ${data.make}`],
+        ["Direction", data.direction === "entering" ? "Entering Oregon" : "Exiting Oregon"],
+        ["Trip type", data.tripType === "round-trip" ? "Round trip" : "One way"],
+        ["Distance", `${Number(data.miles).toFixed(1)} mi`],
+        ["Amount due", `$${Number(data.price).toFixed(2)}`],
+      ];
+  summaryCard.innerHTML = rows
+    .map(([label, value]) => `<div class="summary-line"><span>${label}</span><span>${value ?? ""}</span></div>`)
+    .join("");
+
+  // --- Stripe setup -------------------------------------------------
+  const STRIPE_PUBLISHABLE_KEY = "pk_test_REPLACE_WITH_YOUR_KEY"; // <-- your Stripe publishable key
+  const CREATE_INTENT_ENDPOINT = "/api/create-payment-intent"; // <-- your backend endpoint
+
+  const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+  const elements = stripe.elements();
+  const card = elements.create("card");
+  card.mount("#stripe-card-element");
+
+  card.on("change", (event) => {
+    document.getElementById("card-errors").textContent = event.error ? event.error.message : "";
+  });
+
+  const form = document.getElementById("payment-form");
+  const submitBtn = document.getElementById("submit-btn");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Processing…";
+
+    try {
+      // 1. Ask your backend to save this application and create a
+      //    PaymentIntent for the amount due. Sending the full `data`
+      //    object is what lets it show up in the admin panel as a
+      //    "pending" request even before payment completes.
+      const intentRes = await fetch(CREATE_INTENT_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!intentRes.ok) throw new Error("Could not start payment. Try again.");
+      const { clientSecret } = await intentRes.json();
+
+      // 2. Confirm the card payment with Stripe.js.
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card, billing_details: { email: data.email } },
+      });
+
+      if (result.error) {
+        document.getElementById("card-errors").textContent = result.error.message;
+      } else if (result.paymentIntent.status === "succeeded") {
+        sessionStorage.removeItem("permitData");
+        document.querySelector(".page").innerHTML =
+          '<h1>Payment received</h1><p class="subhead">Your permit application has been submitted. A confirmation has been sent to ' +
+          data.email + ".</p>";
+      }
+    } catch (err) {
+      document.getElementById("card-errors").textContent = err.message;
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Pay";
+    }
+  });
+</script>
+
+</body>
+</html>
